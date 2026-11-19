@@ -72,7 +72,7 @@ main{display:flex;flex-direction:column;min-height:0;min-width:0}
 const POLLI_AUTH='https://enter.pollinations.ai';
 let aiToken=sessionStorage.getItem('zoshit_ai_token')||'',aiUser=null;
 const redirectUri=location.origin+location.pathname;
-function b64url(bytes){let s='';for(const b of bytes)s+=String.fromCharCode(b);return btoa(s).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'')}
+function b64url(bytes){let s='';for(const b of bytes)s+=String.fromCharCode(b);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 async function connectAI(){
  const verifier=b64url(crypto.getRandomValues(new Uint8Array(32)));
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier));
