@@ -1,14 +1,14 @@
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).end();
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!token) return res.status(401).json({ error: 'Спочатку увійди в акаунт ШІ.' });
+
   const prompt = String((req.body || {}).prompt || '').trim();
   if (!prompt || prompt.length > 1200) return res.status(400).json({ error: 'Опиши зображення коротше (до 1200 символів).' });
 
   try {
     const url = 'https://gen.pollinations.ai/image/' + encodeURIComponent(prompt) +
       '?model=black-forest-labs/flux.1-schnell&width=1024&height=1024&nologo=true';
-    const r = await fetch(url, { headers: { authorization: 'Bearer ' + token } });
+    const r = await fetch(url, { headers: token ? { authorization: 'Bearer ' + token } : {} });
     if (!r.ok) {
       const detail = await r.text();
       return res.status(r.status).json({
