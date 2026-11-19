@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const TEAM_ID = process.env.VERCEL_TEAM_ID;
 const PROJECT_ID = process.env.VERCEL_PROJECT_ID;
 const ROOT = '/vercel/workspace';
+const TEMPLATE_SNAPSHOT_ID = process.env.ZOSHIT_TEMPLATE_SNAPSHOT_ID || '';
 const ALLOWED_HOSTS = [
   'services.gradle.org','downloads.gradle.org','repo.maven.apache.org','plugins.gradle.org',
   'maven.fabricmc.net','maven.minecraftforge.net','maven.neoforged.net','api.modrinth.com',
@@ -43,14 +44,18 @@ async function getBox(userHash) {
     await box.runCommand('mkdir', ['-p', ROOT]);
     return box;
   } catch (e) {
-    const box = await Sandbox.create({
+    const opts = {
       name,
-      image: 'vercel/sandbox/node:22',
       persistent: true,
       timeout: 30 * 60 * 1000,
       resources: { vcpus: 2, memory: 4096 },
       networkPolicy: { mode: 'custom', allowedDomains: ALLOWED_HOSTS }
-    });
+    };
+    let box = null;
+    if (TEMPLATE_SNAPSHOT_ID) {
+      try { box = await Sandbox.create({ ...opts, source: { type:'snapshot', snapshotId:TEMPLATE_SNAPSHOT_ID } }); } catch {}
+    }
+    if (!box) box = await Sandbox.create({ ...opts, image:'vercel/sandbox/node:22' });
     await box.runCommand('mkdir', ['-p', ROOT]);
     const marker = ROOT + '/.zoshit-java-ready';
     try { await box.fs.stat(marker); }
