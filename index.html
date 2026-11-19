@@ -62,7 +62,7 @@ main{display:flex;flex-direction:column;min-height:0;min-width:0}
 <div class="drawerShade" id="drawerShade" hidden></div><aside class="drawer" id="drawer" aria-label="Історія чатів"><div class="drawerHead"><span>Твої чати</span><button class="ib" id="drawerClose" aria-label="Закрити">✕</button></div><div class="drawerActions"><button class="btn" id="newChat">＋ Новий чат</button></div><div class="chatList" id="chatList"></div><p class="empty">Розмови зберігаються на цьому пристрої.</p></aside>
 <div class="top"><button class="hamb" id="hamb" aria-label="Відкрити чати">☰</button><h2 id="ttl">Чат</h2><div class="tr">
 <button class="pen" id="pen" aria-label="Змінити колір сайту"><svg viewBox="0 0 40 40" width="40" height="40"><g transform="rotate(45 20 20)"><rect x="16" y="2" width="8" height="5" rx="1.5" fill="#ffb4c8"/><rect x="16" y="7" width="8" height="4" fill="#d5d9e2"/><rect x="16" y="11" width="8" height="19" fill="#ffd54a"/><path d="M16 30h8l-4 9z" fill="#f3d9b1"/><path d="M18.3 35h3.4L20 39z" fill="var(--c1)"/></g></svg></button>
-<div class="pal" id="pal" hidden></div><button class="btn" id="login">Увійти з Google</button></div></div>
+<div class="pal" id="pal" hidden></div><div id="googleSignIn" hidden></div><button class="btn" id="login">Налаштувати вхід Google</button></div></div>
 <section class="view on" id="v-chat"><div id="msgs"></div>
 <div class="comp"><div class="chips" id="ats"></div>
 <div class="row"><button class="ib" id="clip" aria-label="Додати файл"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12l-8.5 8.5a5 5 0 01-7-7L14 5a3.3 3.3 0 014.7 4.7L10 18.4a1.7 1.7 0 01-2.4-2.4L15 8.6"/></svg></button>
@@ -76,7 +76,7 @@ main{display:flex;flex-direction:column;min-height:0;min-width:0}
 <script type="module">
 const POLLI_AUTH='https://enter.pollinations.ai';
 const POLLI_CLIENT_ID='pk_kB9KbExuhAqpmBHI';
-let aiToken=sessionStorage.getItem('zoshit_ai_token')||'',aiUser=null;
+let aiToken=sessionStorage.getItem('zoshit_ai_token')||'',aiUser=(()=>{try{return JSON.parse(sessionStorage.getItem('zoshit_google_user')||'null')}catch{return null}})(),googleClientId='';
 const redirectUri=location.origin+location.pathname;
 function b64url(bytes){let s='';for(const b of bytes)s+=String.fromCharCode(b);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 async function connectAI(){
@@ -130,16 +130,16 @@ const md=s=>{
  return out.join('<br>');
 };
 const TH=[['#ff7eb3','#7a5cff','#26c6da'],['#00c6ff','#0072ff','#7f00ff'],['#ff9966','#ff5e62','#8e2de2'],['#11998e','#38ef7d','#0f4c75'],['#ee0979','#ff6a00','#6a11cb'],['#232526','#5b3cc4','#0f2027']];
-let S={chat:[],chats:[],activeChatId:null,notes:[],mem:[],th:0,hex:'',u:0},att=[],busy=false,uid=null,cloud=null,tm,imageMode=false;
+let storeKey='zoshit';let S={chat:[],chats:[],activeChatId:null,notes:[],mem:[],th:0,hex:'',u:0},att=[],busy=false,uid=null,cloud=null,tm,imageMode=false;
 if(!Array.isArray(S.chats))S.chats=[];
 if(S.chat.length&&!S.chats.length){S.activeChatId=String(Date.now());S.chats=[{id:S.activeChatId,title:S.chat.find(m=>m.r==='user')?.t?.slice(0,42)||'Старий чат',updated:S.u||Date.now(),messages:S.chat}];}
 if(!S.activeChatId&&S.chats.length)S.activeChatId=S.chats[0].id;
-try{S={...S,...JSON.parse(localStorage.getItem('zoshit')||'{}')}}catch{}
+try{S={...S,...JSON.parse(localStorage.getItem(storeKey)||'{}')}}catch{}
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.append(e);setTimeout(()=>e.remove(),2600)}
 function hue(x){const n=parseInt(x.slice(1),16),r=(n>>16)/255,g=(n>>8&255)/255,b=(n&255)/255,m=Math.max(r,g,b),d=m-Math.min(r,g,b);if(!d)return 260;const h=m==r?((g-b)/d)%6:m==g?(b-r)/d+2:(r-g)/d+4;return Math.round((h*60+360)%360)}
 function theme(){let c=TH[S.th]||TH[0];if(S.hex){const h=hue(S.hex);c=[`hsl(${h} 85% 60%)`,`hsl(${(h+70)%360} 80% 55%)`,`hsl(${(h+150)%360} 80% 55%)`]}c.forEach((v,i)=>document.documentElement.style.setProperty('--c'+(i+1),v))}
 function save(){S.u=Date.now();if(S.chat.length){let c=S.chats.find(x=>x.id===S.activeChatId);if(!c){c={id:S.activeChatId||String(Date.now()),title:'Новий чат',updated:S.u,messages:[]};S.activeChatId=c.id;S.chats.unshift(c)}c.messages=S.chat;c.updated=S.u;const first=S.chat.find(m=>m.r==='user');if(first&&(!c.title||c.title==='Новий чат'))c.title=first.t.slice(0,42)||'Новий чат';}store();drawChatList();clearTimeout(tm);tm=setTimeout(push,1500)}
-function store(){try{localStorage.setItem('zoshit',JSON.stringify(S))}catch{}}
+function store(){try{localStorage.setItem(storeKey,JSON.stringify(S))}catch{}}
 async function push(){if(cloud)try{await cloud.set({j:JSON.stringify(S),u:S.u})}catch{toast('Не вдалось зберегти в акаунт')}}
 function drawChatList(){const el=$('#chatList');if(!el)return;el.innerHTML=S.chats.slice().sort((a,b)=>b.updated-a.updated).map(c=>'<div class="chatItem '+(c.id===S.activeChatId?'active':'')+'"><button class="chatPick" data-open-chat="'+esc(c.id)+'">'+esc(c.title||'Новий чат')+'</button><button class="chatDel" data-delete-chat="'+esc(c.id)+'" aria-label="Видалити чат">🗑</button></div>').join('')||'<p class="empty">Поки немає збережених чатів.</p>'}
 function showDrawer(on){$('#drawer').classList.toggle('open',on);$('#drawerShade').hidden=!on;if(on)drawChatList()}
@@ -164,13 +164,13 @@ async function send(){const q=$('#q').value.trim();if(busy||!q&&!att.length)retu
  const sent=att;S.chat.push({r:'user',t:q||'(файл)',f:sent.map(a=>a.n)});if(q)S.mem=[...S.mem,q.slice(0,160)].slice(-30);
  att=[];$('#q').value='';$('#q').style.height='auto';busy=true;drawAtt();draw();
  try{
-  if(!aiToken)throw Error('Спочатку натисни «Увійти та підключити ШІ».');
+  // Chat and image generation can use the provider's anonymous route; Google login is used for the private workspace.
   if(imageMode||/(намалюй|намалювати|згенеруй|згенерувати|створи\s+(?:мені\s+)?(?:фото|фотк\w*|картинк\w*|зображення)|зроби\s+(?:мені\s+)?(?:фото|фотк\w*|картинк\w*|зображення)|зроби\s+картинку|генерац\w*\s+зображення)/i.test(q)){
-   const r=await fetch('/api/image',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+aiToken},body:JSON.stringify({prompt:q})});
+   const r=await fetch('/api/image',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:q})});
    const d=await r.json();if(!r.ok)throw Error(d.error||r.status);
    S.chat.push({r:'assistant',t:'Готово! Ось зображення:',img:d.url});
   }else{
-   const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+aiToken},body:JSON.stringify({messages:[...hist,{role:'user',content:parts}],memory:[...S.chats.filter(c=>c.id!==S.activeChatId).slice(0,8).flatMap(c=>(c.messages||[]).slice(-6).map(m=>(m.r==='user'?'Користувач: ':'Асистент: ')+String(m.t||'').slice(0,500))),...S.mem].slice(-40)})});
+   const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({messages:[...hist,{role:'user',content:parts}],memory:[...S.chats.filter(c=>c.id!==S.activeChatId).slice(0,8).flatMap(c=>(c.messages||[]).slice(-6).map(m=>(m.r==='user'?'Користувач: ':'Асистент: ')+String(m.t||'').slice(0,500))),...S.mem].slice(-40)})});
    const d=await r.json();if(!r.ok)throw Error(d.error||r.status);S.chat.push({r:'assistant',t:d.text||'(порожня відповідь)'});
   }
  }catch(e){S.chat.pop();if(q)S.mem.pop();$('#q').value=q;att=sent;drawAtt();toast('Помилка: '+e.message)}
@@ -220,5 +220,27 @@ async function fbInit(){
   if(!u){cloud=null;return}
   const ref=Fs.doc(db,'users',u.uid);cloud={set:d=>Fs.setDoc(ref,d)};
   try{const s=await Fs.getDoc(ref);if(s.exists()&&s.data().u>S.u){S={...S,...JSON.parse(s.data().j)};store();theme();draw();notes()}else push()}catch{toast('Немає доступу до хмари')}})}
-theme();draw();notes();drawChatList();polliAuth();
+theme();draw();notes();drawChatList();googleAuthInit();
+async function googleAuthInit(){
+ try{
+  const cfg=await fetch('/api/config',{cache:'no-store'}).then(r=>r.json());googleClientId=cfg.googleClientId||'';
+  if(!googleClientId){$('#login').textContent='Google-вхід не налаштовано';$('#login').onclick=()=>toast('Потрібен Google OAuth Client ID. Його треба створити в Google Cloud і додати у Vercel як GOOGLE_CLIENT_ID.');return}
+  await new Promise((resolve,reject)=>{if(window.google?.accounts?.id)return resolve();const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;sc.defer=true;sc.onload=resolve;sc.onerror=reject;document.head.append(sc)});
+  google.accounts.id.initialize({client_id:googleClientId,callback:async response=>{
+   try{
+    const v=await fetch('/api/auth/google',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:response.credential})});
+    const d=await v.json();if(!v.ok)throw Error(d.error||'Google sign-in failed');
+    aiToken=response.credential;aiUser=d.user;sessionStorage.setItem('zoshit_ai_token',aiToken);sessionStorage.setItem('zoshit_google_user',JSON.stringify(aiUser));
+    storeKey='zoshit_user_'+aiUser.sub;
+    try{const saved=localStorage.getItem(storeKey);S=saved?{...S,...JSON.parse(saved)}:{chat:[],chats:[],activeChatId:null,notes:[],mem:[],th:S.th||0,hex:'',u:0}}catch{S={chat:[],chats:[],activeChatId:null,notes:[],mem:[],th:0,hex:'',u:0}}
+    theme();draw();notes();drawChatList();$('#googleSignIn').hidden=true;$('#login').hidden=false;$('#login').textContent=(aiUser.name||aiUser.email||'Google акаунт')+' · вийти';toast('Увійшли через Google. ШІ вже доступний.');
+   }catch(e){toast('Помилка входу: '+e.message)}
+  }});
+  $('#googleSignIn').hidden=false;$('#login').hidden=true;
+  google.accounts.id.renderButton($('#googleSignIn'),{theme:'filled_black',size:'large',shape:'pill',text:'signin_with',locale:'uk'});
+  if(aiToken&&aiUser){storeKey='zoshit_user_'+aiUser.sub;$('#googleSignIn').hidden=true;$('#login').hidden=false;$('#login').textContent=(aiUser.name||aiUser.email||'Google акаунт')+' · вийти';}
+  $('#login').onclick=()=>{if(!aiToken)return;sessionStorage.removeItem('zoshit_ai_token');sessionStorage.removeItem('zoshit_google_user');aiToken='';aiUser=null;storeKey='zoshit';$('#login').hidden=true;$('#googleSignIn').hidden=false;toast('Вийшли з акаунта')};
+ }catch(e){$('#login').hidden=false;$('#login').textContent='Google-вхід недоступний';$('#login').onclick=()=>toast('Не вдалося завантажити Google Sign-In. Перевір з’єднання.')}
+}
+
 </script></body></html>
