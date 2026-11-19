@@ -48,6 +48,7 @@ async function getBox(userHash) {
       name,
       persistent: true,
       timeout: 30 * 60 * 1000,
+      snapshotExpiration: 30 * 24 * 60 * 60 * 1000,
       resources: { vcpus: 2, memory: 4096 },
       networkPolicy: { mode: 'custom', allowedDomains: ALLOWED_HOSTS }
     };
@@ -165,6 +166,8 @@ module.exports = async (req, res) => {
     }
 
     if (action === 'clear') {
+      const active = await box.fs.readFile(ROOT+'/.zoshit-active-job.json','utf8').catch(()=>null);
+      if (active) { try { const job=JSON.parse(active); const command=await box.getCommand(job.cmdId); await command.kill('SIGTERM'); } catch {} }
       await box.runCommand('sh', ['-lc', "find " + ROOT + " -mindepth 1 -maxdepth 1 ! -name '.zoshit-java-ready' -exec rm -rf -- {} +"]);
       return res.json({ ok:true });
     }
@@ -192,6 +195,7 @@ module.exports = async (req, res) => {
       const job = JSON.parse(raw);
       try {
         const command = await box.getCommand(job.cmdId);
+        try { await command.wait({ signal: AbortSignal.timeout(700) }); } catch {}
         const logs = [];
         const iterator = command.logs();
         const first = await Promise.race([iterator.next(), new Promise(resolve=>setTimeout(()=>resolve(null),900))]);
