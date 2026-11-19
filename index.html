@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Зошит — помічник студента</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Unbounded:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--c1:#ff7eb3;--c2:#7a5cff;--c3:#26c6da;--glass:rgba(24,14,56,.45);--line:rgba(255,255,255,.28)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{font:16px/1.5 Manrope,system-ui,sans-serif;color:#fff;background:linear-gradient(125deg,var(--c1),var(--c2),var(--c3),var(--c1));background-size:300% 300%;animation:bg 20s ease infinite;overflow:hidden}
+@keyframes bg{50%{background-position:100% 50%}}
+button,textarea{font:inherit;color:inherit}button{cursor:pointer}
+.app{display:grid;grid-template-columns:230px 1fr;height:100dvh;padding-top:env(safe-area-inset-top)}
+.side{display:flex;flex-direction:column;gap:6px;padding:20px 14px;background:var(--glass);backdrop-filter:blur(16px);border-right:1px solid var(--line)}
+.logo{font:600 21px Unbounded,sans-serif;margin:0 8px 18px}
+.nav{background:none;border:0;text-align:left;padding:11px 14px;border-radius:12px;font-weight:600}
+.nav.on{background:rgba(255,255,255,.22)}
+main{display:flex;flex-direction:column;min-height:0;min-width:0}
+.top{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;gap:10px}
+.top h2{font:600 15px Unbounded,sans-serif;margin:0}
+.tr{display:flex;align-items:center;gap:8px;position:relative}
+.btn{background:rgba(255,255,255,.9);color:#1d1535;border:0;border-radius:999px;padding:9px 16px;font-weight:700}
+.pen{background:none;border:0;padding:0;line-height:0}
+.pen svg{transform-origin:50% 85%;animation:wig 5s ease-in-out infinite}.pen:hover svg{animation-duration:.8s}
+@keyframes wig{0%,84%,100%{transform:rotate(0)}88%{transform:rotate(-16deg)}93%{transform:rotate(10deg)}}
+.pal{position:absolute;right:0;top:50px;z-index:5;display:grid;grid-template-columns:repeat(4,36px);gap:10px;padding:14px;border-radius:18px;background:var(--glass);backdrop-filter:blur(18px);border:1px solid var(--line);animation:pop .25s ease}
+@keyframes pop{from{opacity:0;transform:translateY(-6px) scale(.96)}}
+.sw{width:36px;height:36px;border-radius:50%;border:2px solid #fff;padding:0;position:relative;transition:transform .2s}.sw:hover{transform:scale(1.15)}
+.cust{background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)}.cust input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.view{display:none;flex:1;min-height:0;flex-direction:column}.view.on{display:flex}
+#msgs{flex:1;overflow:auto;padding:8px 20px 20px;display:flex;flex-direction:column;gap:12px}
+.m{max-width:min(780px,88%);padding:12px 16px;border-radius:18px;background:var(--glass);backdrop-filter:blur(10px);overflow-wrap:anywhere}
+.m.u{align-self:flex-end;background:rgba(255,255,255,.92);color:#1d1535}.m small{display:block;opacity:.65}
+.m pre{background:rgba(0,0,0,.35);padding:10px;border-radius:10px;overflow:auto;white-space:pre-wrap}.m code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:5px}.m a{color:#fff}
+.act{margin-top:8px;display:flex;gap:8px}.act button{background:rgba(255,255,255,.18);border:0;border-radius:8px;padding:4px 10px;font-size:13px}
+.dots i{display:inline-block;width:8px;height:8px;margin:0 3px;border-radius:50%;background:#fff;animation:d 1s infinite}.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes d{50%{transform:translateY(-6px);opacity:.5}}
+.hello{margin:auto;text-align:center;max-width:560px}.hello h1{font:600 28px Unbounded,sans-serif;margin:0 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip{background:rgba(255,255,255,.18);border:1px solid var(--line);border-radius:999px;padding:7px 14px}.chip:hover{background:rgba(255,255,255,.3)}
+.comp{padding:10px 14px calc(14px + env(safe-area-inset-bottom) * 0);display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;align-items:flex-end;background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:22px;padding:8px}
+.row textarea{flex:1;background:none;border:0;outline:0;resize:none;padding:8px 4px;max-height:160px}.row textarea::placeholder{color:rgba(255,255,255,.6)}
+.ib{background:none;border:0;width:40px;height:40px;border-radius:50%;display:grid;place-items:center}.ib:hover{background:rgba(255,255,255,.2)}
+.cam{display:none}.go{background:#fff;color:#1d1535;border:0;width:40px;height:40px;border-radius:50%;display:grid;place-items:center}
+.at{background:rgba(255,255,255,.22);border-radius:999px;padding:3px 6px 3px 12px;font-size:13px}.at button{background:none;border:0}
+.nbox{display:flex;gap:8px;padding:8px 20px;align-items:flex-start}.nbox textarea{flex:1;background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:10px;outline:0;resize:vertical}
+#nl{flex:1;overflow:auto;padding:8px 20px 20px;display:grid;gap:10px;align-content:start;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.note{background:var(--glass);backdrop-filter:blur(10px);border-radius:16px;padding:14px;white-space:pre-wrap;overflow-wrap:anywhere}.note small{display:block;opacity:.6;margin-top:6px}
+.empty{opacity:.8;padding:8px 20px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1d1535;padding:10px 18px;border-radius:12px;z-index:9}
+@media(pointer:coarse){.cam{display:grid}}
+@media(max-width:760px){.app{grid-template-columns:1fr;grid-template-rows:1fr auto}.side{order:2;flex-direction:row;padding:8px 10px calc(8px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid var(--line)}.logo{display:none}.nav{flex:1;text-align:center}.m{max-width:94%}#msgs,#nl,.nbox{padding-left:12px;padding-right:12px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body>
+<div class="app">
+<aside class="side"><div class="logo">Зошит</div><button class="nav on" data-v="chat">Чат</button><button class="nav" data-v="notes">Нотатки</button></aside>
+<main>
+<div class="top"><h2 id="ttl">Чат</h2><div class="tr">
+<button class="pen" id="pen" aria-label="Змінити колір сайту"><svg viewBox="0 0 40 40" width="40" height="40"><g transform="rotate(45 20 20)"><rect x="16" y="2" width="8" height="5" rx="1.5" fill="#ffb4c8"/><rect x="16" y="7" width="8" height="4" fill="#d5d9e2"/><rect x="16" y="11" width="8" height="19" fill="#ffd54a"/><path d="M16 30h8l-4 9z" fill="#f3d9b1"/><path d="M18.3 35h3.4L20 39z" fill="var(--c1)"/></g></svg></button>
+<div class="pal" id="pal" hidden></div><button class="btn" id="login">Увійти з Google</button></div></div>
+<section class="view on" id="v-chat"><div id="msgs"></div>
+<div class="comp"><div class="chips" id="ats"></div>
+<div class="row"><button class="ib" id="clip" aria-label="Додати файл"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12l-8.5 8.5a5 5 0 01-7-7L14 5a3.3 3.3 0 014.7 4.7L10 18.4a1.7 1.7 0 01-2.4-2.4L15 8.6"/></svg></button>
+<button class="ib cam" id="camb" aria-label="Сфотографувати"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+<textarea id="q" rows="1" placeholder="Книга, твір, фото задачі — питай що завгодно"></textarea>
+<button class="go" id="go" aria-label="Надіслати"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></div></div>
+<input type="file" id="fi" multiple accept="image/*,.pdf,.txt,.md,.csv" hidden><input type="file" id="ci" accept="image/*" capture="environment" hidden></section>
+<section class="view" id="v-notes"><div class="nbox"><textarea id="nt" rows="2" placeholder="Нова нотатка"></textarea><button class="btn" id="na">Додати</button></div><div id="nl"></div></section>
+</main></div>
+<script type="module">
+const FB={apiKey:"",authDomain:"",projectId:"",appId:""};
+const $=s=>document.querySelector(s);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const md=s=>esc(s).replace(/```([sS]*?)```/g,'<pre>$1</pre>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/**([^*]+)**/g,'<b>$1</b>').replace(/[([^]]+)]((https?:[^)s]+))/g,'<a href="$2" target="_blank" rel="noopener">$1</a>').replace(/^#{1,3} (.*)$/gm,'<b>$1</b>').replace(/\n/g,'<br>');
+const TH=[['#ff7eb3','#7a5cff','#26c6da'],['#00c6ff','#0072ff','#7f00ff'],['#ff9966','#ff5e62','#8e2de2'],['#11998e','#38ef7d','#0f4c75'],['#ee0979','#ff6a00','#6a11cb'],['#232526','#5b3cc4','#0f2027']];
+let S={chat:[],notes:[],mem:[],th:0,hex:'',u:0},att=[],busy=false,uid=null,cloud=null,tm;
+try{S={...S,...JSON.parse(localStorage.getItem('zoshit')||'{}')}}catch{}
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.append(e);setTimeout(()=>e.remove(),2600)}
+function hue(x){const n=parseInt(x.slice(1),16),r=(n>>16)/255,g=(n>>8&255)/255,b=(n&255)/255,m=Math.max(r,g,b),d=m-Math.min(r,g,b);if(!d)return 260;const h=m==r?((g-b)/d)%6:m==g?(b-r)/d+2:(r-g)/d+4;return Math.round((h*60+360)%360)}
+function theme(){let c=TH[S.th]||TH[0];if(S.hex){const h=hue(S.hex);c=[`hsl(${h} 85% 60%)`,`hsl(${(h+70)%360} 80% 55%)`,`hsl(${(h+150)%360} 80% 55%)`]}c.forEach((v,i)=>document.documentElement.style.setProperty('--c'+(i+1),v))}
+function save(){S.u=Date.now();store();clearTimeout(tm);tm=setTimeout(push,1500)}
+function store(){try{localStorage.setItem('zoshit',JSON.stringify(S))}catch{}}
+async function push(){if(cloud)try{await cloud.set({j:JSON.stringify(S),u:S.u})}catch{toast('Не вдалось зберегти в акаунт')}}
+function draw(){const el=$('#msgs');
+ if(!S.chat.length){el.innerHTML=`<div class="hello"><h1>Що робимо сьогодні?</h1><p>Питай про що завгодно, кидай фото завдання чи файл.</p><div class="chips">${['Знайди книги з теми…','Напиши твір про…','Розбери фото завдання','Склади план реферату'].map(t=>`<button class="chip" data-p="${t}">${t}</button>`).join('')}${S.mem.slice(-3).reverse().map(t=>`<button class="chip" data-p="${esc(t)}">↺ ${esc(t.slice(0,38))}</button>`).join('')}</div></div>`;return}
+ el.innerHTML=S.chat.map((m,i)=>m.r==='user'?`<div class="m u">${esc(m.t).replace(/\n/g,'<br>')}${m.f?.length?`<small>Файли: ${m.f.map(esc).join(', ')}</small>`:''}</div>`:`<div class="m">${md(m.t)}<div class="act"><button data-s="${i}">У нотатки</button><button data-c="${i}">Копіювати</button></div></div>`).join('')+(busy?'<div class="m dots"><i></i><i></i><i></i></div>':'');
+ el.scrollTop=el.scrollHeight}
+function notes(){const e=S.notes;$('#nl').innerHTML=e.length?e.map(n=>`<div class="note">${esc(n.t)}<small>${new Date(n.id).toLocaleDateString('uk')}</small><div class="act"><button data-a="${n.id}">Спитати ШІ</button><button data-d="${n.id}">Видалити</button></div></div>`).join(''):'<p class="empty">Тут будуть твої нотатки. Додай свою або натисни «У нотатки» під відповіддю ШІ.</p>'}
+function drawAtt(){$('#ats').innerHTML=att.map((a,i)=>`<span class="at">${esc(a.n)} <button data-r="${i}" aria-label="Прибрати">×</button></span>`).join('')}
+const b64=f=>new Promise(r=>{const x=new FileReader;x.onload=()=>r(x.result.split(',')[1]);x.readAsDataURL(f)});
+async function shrink(f){const b=await createImageBitmap(f),k=Math.min(1,1600/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=b.width*k;c.height=b.height*k;c.getContext('2d').drawImage(b,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.82).split(',')[1]}
+async function addFiles(fl){for(const f of fl){try{
+ if(f.type.startsWith('image/'))att.push({n:f.name||'фото',t:'image/jpeg',d:await shrink(f)});
+ else if(f.type==='application/pdf'&&f.size<3e6)att.push({n:f.name,t:f.type,d:await b64(f)});
+ else if(f.type.startsWith('text/')||/\.(txt|md|csv)$/i.test(f.name))att.push({n:f.name,txt:await f.text()});
+ else toast('Не підтримується (або завеликий PDF): '+f.name)}catch{toast('Не вдалось відкрити '+f.name)}}drawAtt()}
+async function send(){const q=$('#q').value.trim();if(busy||!q&&!att.length)return;
+ const hist=S.chat.slice(-16).map(m=>({role:m.r,content:m.t}));while(hist[0]&&hist[0].role!=='user')hist.shift();
+ const parts=att.map(a=>a.txt!=null?{type:'text',text:`Файл «${a.n}»:\n${a.txt.slice(0,40000)}`}:{type:a.t==='application/pdf'?'document':'image',source:{type:'base64',media_type:a.t,data:a.d}});
+ parts.push({type:'text',text:q||'Розбери прикладені файли.'});
+ const sent=att;S.chat.push({r:'user',t:q||'(файл)',f:sent.map(a=>a.n)});if(q)S.mem=[...S.mem,q.slice(0,160)].slice(-30);
+ att=[];$('#q').value='';$('#q').style.height='auto';busy=true;drawAtt();draw();
+ try{const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({messages:[...hist,{role:'user',content:parts}],memory:S.mem})});
+  const d=await r.json();if(!r.ok)throw Error(d.error||r.status);S.chat.push({r:'assistant',t:d.text||'(порожня відповідь)'})}
+ catch(e){S.chat.pop();if(q)S.mem.pop();$('#q').value=q;att=sent;drawAtt();toast('Помилка: '+e.message)}
+ busy=false;save();draw()}
+document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+b.dataset.v));$('#ttl').textContent=b.textContent})
+$('#msgs').onclick=e=>{const t=e.target,p=t.dataset.p,s=t.dataset.s,c=t.dataset.c;
+ if(p){$('#q').value=p;$('#q').focus()}
+ if(s){S.notes.unshift({id:Date.now(),t:S.chat[s].t});save();notes();toast('Збережено в нотатки')}
+ if(c)navigator.clipboard.writeText(S.chat[c].t).then(()=>toast('Скопійовано'))}
+$('#nl').onclick=e=>{const a=e.target.dataset.a,d=e.target.dataset.d;
+ if(d){S.notes=S.notes.filter(n=>n.id!=d);save();notes()}
+ if(a){$('.nav').click();$('#q').value='Про мою нотатку: '+S.notes.find(n=>n.id==a).t;$('#q').focus()}}
+$('#na').onclick=()=>{const t=$('#nt').value.trim();if(!t)return;S.notes.unshift({id:Date.now(),t});$('#nt').value='';save();notes()}
+$('#ats').onclick=e=>{if(e.target.dataset.r){att.splice(e.target.dataset.r,1);drawAtt()}}
+$('#clip').onclick=()=>$('#fi').click();$('#camb').onclick=()=>$('#ci').click();
+$('#fi').onchange=e=>{addFiles(e.target.files);e.target.value=''};$('#ci').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+$('#go').onclick=send;
+$('#q').oninput=e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,160)+'px'};
+$('#q').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&matchMedia('(pointer:fine)').matches){e.preventDefault();send()}};
+addEventListener('paste',e=>{const f=[...e.clipboardData.files];if(f.length){e.preventDefault();addFiles(f)}});
+addEventListener('dragover',e=>e.preventDefault());addEventListener('drop',e=>{e.preventDefault();addFiles(e.dataTransfer.files)});
+$('#pal').innerHTML=TH.map((c,i)=>`<button class="sw" data-t="${i}" style="background:linear-gradient(135deg,${c})" aria-label="Тема ${i+1}"></button>`).join('')+'<label class="sw cust" title="Свій колір"><input type="color" id="hex" value="#7a5cff"></label>';
+$('#pen').onclick=e=>{e.stopPropagation();$('#pal').hidden=!$('#pal').hidden};
+$('#pal').onclick=e=>{e.stopPropagation();if(e.target.dataset.t){S.th=+e.target.dataset.t;S.hex='';theme();save()}};
+$('#hex').oninput=e=>{S.hex=e.target.value;theme();save()};
+addEventListener('click',()=>$('#pal').hidden=true);
+async function fbInit(){
+ if(!FB.apiKey){$('#login').onclick=()=>toast('Щоб увімкнути вхід — встав ключі Firebase у index.html');return}
+ const b='https://www.gstatic.com/firebasejs/10.12.2/',[A,Au,Fs]=await Promise.all([import(b+'firebase-app.js'),import(b+'firebase-auth.js'),import(b+'firebase-firestore.js')]);
+ const app=A.initializeApp(FB),auth=Au.getAuth(app),db=Fs.getFirestore(app);
+ $('#login').onclick=()=>auth.currentUser?(confirm('Вийти з акаунта?')&&Au.signOut(auth)):Au.signInWithPopup(auth,new Au.GoogleAuthProvider()).catch(()=>toast('Вхід не вдався'));
+ Au.onAuthStateChanged(auth,async u=>{$('#login').textContent=u?(u.displayName||'Акаунт').split(' ')[0]+' · вийти':'Увійти з Google';
+  if(!u){cloud=null;return}
+  const ref=Fs.doc(db,'users',u.uid);cloud={set:d=>Fs.setDoc(ref,d)};
+  try{const s=await Fs.getDoc(ref);if(s.exists()&&s.data().u>S.u){S={...S,...JSON.parse(s.data().j)};store();theme();draw();notes()}else push()}catch{toast('Немає доступу до хмари')}})}
+theme();draw();notes();fbInit();
+</script></body></html>
