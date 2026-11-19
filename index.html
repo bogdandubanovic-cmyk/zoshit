@@ -62,7 +62,7 @@ main{display:flex;flex-direction:column;min-height:0;min-width:0}
 <div class="drawerShade" id="drawerShade" hidden></div><aside class="drawer" id="drawer" aria-label="Історія чатів"><div class="drawerHead"><span>Твої чати</span><button class="ib" id="drawerClose" aria-label="Закрити">✕</button></div><div class="drawerActions"><button class="btn" id="newChat">＋ Новий чат</button></div><div class="chatList" id="chatList"></div><p class="empty">Розмови зберігаються на цьому пристрої.</p></aside>
 <div class="top"><button class="hamb" id="hamb" aria-label="Відкрити чати">☰</button><h2 id="ttl">Чат</h2><div class="tr">
 <button class="pen" id="pen" aria-label="Змінити колір сайту"><svg viewBox="0 0 40 40" width="40" height="40"><g transform="rotate(45 20 20)"><rect x="16" y="2" width="8" height="5" rx="1.5" fill="#ffb4c8"/><rect x="16" y="7" width="8" height="4" fill="#d5d9e2"/><rect x="16" y="11" width="8" height="19" fill="#ffd54a"/><path d="M16 30h8l-4 9z" fill="#f3d9b1"/><path d="M18.3 35h3.4L20 39z" fill="var(--c1)"/></g></svg></button>
-<div class="pal" id="pal" hidden></div><div id="googleSignIn" hidden></div><button class="btn" id="login">Налаштувати вхід Google</button></div></div>
+<div class="pal" id="pal" hidden></div><button class="btn" id="aiConnect">Підключити ШІ</button><div id="googleSignIn" hidden></div><button class="btn" id="login">Налаштувати вхід Google</button></div></div>
 <section class="view on" id="v-chat"><div id="msgs"></div>
 <div class="comp"><div class="chips" id="ats"></div>
 <div class="row"><button class="ib" id="clip" aria-label="Додати файл"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12l-8.5 8.5a5 5 0 01-7-7L14 5a3.3 3.3 0 014.7 4.7L10 18.4a1.7 1.7 0 01-2.4-2.4L15 8.6"/></svg></button>
@@ -76,7 +76,7 @@ main{display:flex;flex-direction:column;min-height:0;min-width:0}
 <script type="module">
 const POLLI_AUTH='https://enter.pollinations.ai';
 const POLLI_CLIENT_ID='pk_kB9KbExuhAqpmBHI';
-let aiToken=sessionStorage.getItem('zoshit_ai_token')||'',aiUser=(()=>{try{return JSON.parse(sessionStorage.getItem('zoshit_google_user')||'null')}catch{return null}})(),googleClientId='';
+let aiToken=sessionStorage.getItem('zoshit_ai_token')||'',aiUser=(()=>{try{return JSON.parse(sessionStorage.getItem('zoshit_polli_user')||'null')}catch{return null}})(),googleToken=sessionStorage.getItem('zoshit_google_token')||'',googleUser=(()=>{try{return JSON.parse(sessionStorage.getItem('zoshit_google_user')||'null')}catch{return null}})(),googleClientId='';
 const redirectUri=location.origin+location.pathname;
 function b64url(bytes){let s='';for(const b of bytes)s+=String.fromCharCode(b);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 async function connectAI(){
@@ -90,8 +90,8 @@ async function connectAI(){
  location.href=POLLI_AUTH+'/authorize?'+p.toString();
 }
 async function polliAuth(){
- $('#login').onclick=async()=>{
-  if(aiToken){if(confirm('Від’єднати акаунт ШІ?')){sessionStorage.removeItem('zoshit_ai_token');aiToken='';aiUser=null;updateLogin()}return}
+ $('#aiConnect').onclick=async()=>{
+  if(aiToken){if(confirm('Від’єднати ШІ?')){sessionStorage.removeItem('zoshit_ai_token');sessionStorage.removeItem('zoshit_polli_user');aiToken='';aiUser=null;updateLogin()}return}
   try{await connectAI()}catch(e){toast('Не вдалося почати вхід: '+e.message)}
  };
  const params=new URLSearchParams(location.search),code=params.get('code');
@@ -112,9 +112,9 @@ async function polliAuth(){
  await updateLogin();
 }
 async function updateLogin(){
- if(!aiToken){$('#login').textContent='Увійти та підключити ШІ';return}
- try{const r=await fetch(POLLI_AUTH+'/api/oauth/userinfo',{headers:{Authorization:'Bearer '+aiToken}});if(r.ok)aiUser=await r.json()}catch{}
- $('#login').textContent=(aiUser?.preferred_username||aiUser?.name||'Акаунт')+' · вийти';
+ if(!aiToken){$('#aiConnect').textContent='Підключити ШІ';return}
+ try{const r=await fetch(POLLI_AUTH+'/api/oauth/userinfo',{headers:{Authorization:'Bearer '+aiToken}});if(r.ok){aiUser=await r.json();sessionStorage.setItem('zoshit_polli_user',JSON.stringify(aiUser))}}catch{}
+ $('#aiConnect').textContent=(aiUser?.preferred_username||aiUser?.name||'ШІ підключено')+' · від’єднати';
 }
 const $=s=>document.querySelector(s);
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -164,13 +164,13 @@ async function send(){const q=$('#q').value.trim();if(busy||!q&&!att.length)retu
  const sent=att;S.chat.push({r:'user',t:q||'(файл)',f:sent.map(a=>a.n)});if(q)S.mem=[...S.mem,q.slice(0,160)].slice(-30);
  att=[];$('#q').value='';$('#q').style.height='auto';busy=true;drawAtt();draw();
  try{
-  // Chat and image generation can use the provider's anonymous route; Google login is used for the private workspace.
+  if(!aiToken)throw Error('Натисни «Підключити ШІ», щоб дозволити генерацію.');
   if(imageMode||/(намалюй|намалювати|згенеруй|згенерувати|створи\s+(?:мені\s+)?(?:фото|фотк\w*|картинк\w*|зображення)|зроби\s+(?:мені\s+)?(?:фото|фотк\w*|картинк\w*|зображення)|зроби\s+картинку|генерац\w*\s+зображення)/i.test(q)){
-   const r=await fetch('/api/image',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt:q})});
+   const r=await fetch('/api/image',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+aiToken},body:JSON.stringify({prompt:q})});
    const d=await r.json();if(!r.ok)throw Error(d.error||r.status);
    S.chat.push({r:'assistant',t:'Готово! Ось зображення:',img:d.url});
   }else{
-   const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({messages:[...hist,{role:'user',content:parts}],memory:[...S.chats.filter(c=>c.id!==S.activeChatId).slice(0,8).flatMap(c=>(c.messages||[]).slice(-6).map(m=>(m.r==='user'?'Користувач: ':'Асистент: ')+String(m.t||'').slice(0,500))),...S.mem].slice(-40)})});
+   const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+aiToken},body:JSON.stringify({messages:[...hist,{role:'user',content:parts}],memory:[...S.chats.filter(c=>c.id!==S.activeChatId).slice(0,8).flatMap(c=>(c.messages||[]).slice(-6).map(m=>(m.r==='user'?'Користувач: ':'Асистент: ')+String(m.t||'').slice(0,500))),...S.mem].slice(-40)})});
    const d=await r.json();if(!r.ok)throw Error(d.error||r.status);S.chat.push({r:'assistant',t:d.text||'(порожня відповідь)'});
   }
  }catch(e){S.chat.pop();if(q)S.mem.pop();$('#q').value=q;att=sent;drawAtt();toast('Помилка: '+e.message)}
@@ -190,7 +190,7 @@ $('#ats').onclick=e=>{if(e.target.dataset.r){att.splice(e.target.dataset.r,1);dr
 $('#clip').onclick=()=>$('#fi').click();$('#camb').onclick=()=>$('#ci').click();
 $('#fi').onchange=e=>{addFiles(e.target.files);e.target.value=''};$('#ci').onchange=e=>{addFiles(e.target.files);e.target.value=''};
 
-async function wapi(action,body={}){if(!aiToken)throw Error('Спочатку увійди та підключи ШІ.');const r=await fetch('/api/workspace'+(action==='list'?'':'?action='+encodeURIComponent(action)),{method:action==='list'?'GET':'POST',headers:{'content-type':'application/json','authorization':'Bearer '+aiToken},body:action==='list'?undefined:JSON.stringify({action,...body})});if(!r.ok){const d=await r.json().catch(()=>({}));throw Error(d.error||'Помилка робочого середовища');}return r}
+async function wapi(action,body={}){const auth=googleToken||aiToken;if(!auth)throw Error('Спочатку увійди через Google або підключи ШІ.');const r=await fetch('/api/workspace'+(action==='list'?'':'?action='+encodeURIComponent(action)),{method:action==='list'?'GET':'POST',headers:{'content-type':'application/json','authorization':'Bearer '+auth},body:action==='list'?undefined:JSON.stringify({action,...body})});if(!r.ok){const d=await r.json().catch(()=>({}));throw Error(d.error||'Помилка робочого середовища');}return r}
 function fmtBytes(n){if(n<1024)return n+' Б';if(n<1048576)return (n/1024).toFixed(1)+' КБ';return (n/1048576).toFixed(1)+' МБ'}
 async function wrefresh(){try{const r=await wapi('list');const d=await r.json();$('#wstatus').textContent='Зайнято: '+fmtBytes(d.bytes)+' / 500 МБ · '+d.files.length+' файлів';$('#wfiles').innerHTML=d.files.map(f=>'<div class="wfile"><span>'+esc(f.path)+'</span><small>'+fmtBytes(f.size)+'</small><button data-wdown="'+esc(f.path)+'">↓</button><button data-wdel="'+esc(f.path)+'">✕</button></div>').join('')||'<p class="empty">Папка порожня. Завантаж ZIP або файли проєкту.</p>';}catch(e){$('#wstatus').textContent=e.message}}
 $('#wrefresh').onclick=wrefresh;
@@ -220,7 +220,7 @@ async function fbInit(){
   if(!u){cloud=null;return}
   const ref=Fs.doc(db,'users',u.uid);cloud={set:d=>Fs.setDoc(ref,d)};
   try{const s=await Fs.getDoc(ref);if(s.exists()&&s.data().u>S.u){S={...S,...JSON.parse(s.data().j)};store();theme();draw();notes()}else push()}catch{toast('Немає доступу до хмари')}})}
-theme();draw();notes();drawChatList();googleAuthInit();
+theme();draw();notes();drawChatList();googleAuthInit();polliAuth();
 async function googleAuthInit(){
  try{
   const cfg=await fetch('/api/config',{cache:'no-store'}).then(r=>r.json());googleClientId=cfg.googleClientId||'';
@@ -230,16 +230,16 @@ async function googleAuthInit(){
    try{
     const v=await fetch('/api/auth/google',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:response.credential})});
     const d=await v.json();if(!v.ok)throw Error(d.error||'Google sign-in failed');
-    aiToken=response.credential;aiUser=d.user;sessionStorage.setItem('zoshit_ai_token',aiToken);sessionStorage.setItem('zoshit_google_user',JSON.stringify(aiUser));
-    storeKey='zoshit_user_'+aiUser.sub;
+    googleToken=response.credential;googleUser=d.user;sessionStorage.setItem('zoshit_google_token',googleToken);sessionStorage.setItem('zoshit_google_user',JSON.stringify(googleUser));
+    storeKey='zoshit_user_'+googleUser.sub;
     try{const saved=localStorage.getItem(storeKey);S=saved?{...S,...JSON.parse(saved)}:{chat:[],chats:[],activeChatId:null,notes:[],mem:[],th:S.th||0,hex:'',u:0}}catch{S={chat:[],chats:[],activeChatId:null,notes:[],mem:[],th:0,hex:'',u:0}}
-    theme();draw();notes();drawChatList();$('#googleSignIn').hidden=true;$('#login').hidden=false;$('#login').textContent=(aiUser.name||aiUser.email||'Google акаунт')+' · вийти';toast('Увійшли через Google. ШІ вже доступний.');
+    theme();draw();notes();drawChatList();$('#googleSignIn').hidden=true;$('#login').hidden=false;$('#login').textContent=(googleUser.name||googleUser.email||'Google акаунт')+' · вийти';toast('Увійшли через Google. Тепер робоче середовище прив’язане до акаунта. Для ШІ окремо натисни «Підключити ШІ».');
    }catch(e){toast('Помилка входу: '+e.message)}
   }});
   $('#googleSignIn').hidden=false;$('#login').hidden=true;
   google.accounts.id.renderButton($('#googleSignIn'),{theme:'filled_black',size:'large',shape:'pill',text:'signin_with',locale:'uk'});
-  if(aiToken&&aiUser){storeKey='zoshit_user_'+aiUser.sub;try{const saved=localStorage.getItem(storeKey);if(saved)S={...S,...JSON.parse(saved)}}catch{}theme();draw();notes();drawChatList();$('#googleSignIn').hidden=true;$('#login').hidden=false;$('#login').textContent=(aiUser.name||aiUser.email||'Google акаунт')+' · вийти';}
-  $('#login').onclick=()=>{if(!aiToken)return;sessionStorage.removeItem('zoshit_ai_token');sessionStorage.removeItem('zoshit_google_user');aiToken='';aiUser=null;storeKey='zoshit';try{S={chat:[],chats:[],activeChatId:null,notes:[],mem:[],...JSON.parse(localStorage.getItem(storeKey)||'{}')}}catch{S={chat:[],chats:[],activeChatId:null,notes:[],mem:[],th:0,hex:'',u:0}}theme();draw();notes();drawChatList();$('#login').hidden=true;$('#googleSignIn').hidden=false;toast('Вийшли з акаунта')};
+  if(googleToken&&googleUser){storeKey='zoshit_user_'+googleUser.sub;try{const saved=localStorage.getItem(storeKey);if(saved)S={...S,...JSON.parse(saved)}}catch{}theme();draw();notes();drawChatList();$('#googleSignIn').hidden=true;$('#login').hidden=false;$('#login').textContent=(googleUser.name||googleUser.email||'Google акаунт')+' · вийти';}
+  $('#login').onclick=()=>{if(!googleToken)return;sessionStorage.removeItem('zoshit_google_token');sessionStorage.removeItem('zoshit_google_user');googleToken='';googleUser=null;storeKey='zoshit';try{S={chat:[],chats:[],activeChatId:null,notes:[],mem:[],...JSON.parse(localStorage.getItem(storeKey)||'{}')}}catch{S={chat:[],chats:[],activeChatId:null,notes:[],mem:[],th:0,hex:'',u:0}}theme();draw();notes();drawChatList();$('#login').hidden=true;$('#googleSignIn').hidden=false;toast('Вийшли з акаунта')};
  }catch(e){$('#login').hidden=false;$('#login').textContent='Google-вхід недоступний';$('#login').onclick=()=>toast('Не вдалося завантажити Google Sign-In. Перевір з’єднання.')}
 }
 
