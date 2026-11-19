@@ -2,7 +2,7 @@
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).end();
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  // Anonymous text generation is allowed by the provider; authenticated users get their own tools/search permissions.
+  if (!token) return res.status(401).json({ error: 'Підключи ШІ, щоб почати чат.' });
 
   const { messages = [], memory = [] } = req.body || {};
   if (!Array.isArray(messages) || messages.length > 20 || !Array.isArray(memory)) {
@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
     const headers = {
       'content-type': 'application/json',
       'accept': 'application/json, text/event-stream',
-      ...(token ? { 'authorization': 'Bearer ' + token } : {})
+      'authorization': 'Bearer ' + token
     };
     if (session) headers['mcp-session-id'] = session;
     if (method !== 'initialize') headers['mcp-protocol-version'] = '2025-03-26';
@@ -87,7 +87,7 @@ module.exports = async (req, res) => {
 
     const toolMap = {};
     const tools = [];
-    if (token && wantsWeb) {
+    if (wantsWeb) {
       try {
         const exa = await connectMcp('exa');
         for (const t of exa.tools) {
@@ -101,7 +101,7 @@ module.exports = async (req, res) => {
         }
       } catch (e) { /* Search remains optional if this user's key lacks MCP access. */ }
     }
-    if (token && wantsCode) {
+    if (wantsCode) {
       try {
         const computer = await connectMcp('computer');
         for (const t of computer.tools) {
@@ -130,7 +130,7 @@ module.exports = async (req, res) => {
     for (let step = 0; step < 4; step++) {
       const r = await fetch('https://gen.pollinations.ai/v1/chat/completions', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', ...(token ? { authorization: 'Bearer ' + token } : {}) },
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
         body: JSON.stringify(body)
       });
       const d = await r.json();
