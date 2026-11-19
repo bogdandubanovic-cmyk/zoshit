@@ -238,8 +238,8 @@ async function googleAuthInit(){
   }});
   $('#googleSignIn').hidden=false;$('#login').hidden=true;
   google.accounts.id.renderButton($('#googleSignIn'),{theme:'filled_black',size:'large',shape:'pill',text:'signin_with',locale:'uk'});
-  if(aiToken&&aiUser){storeKey='zoshit_user_'+aiUser.sub;$('#googleSignIn').hidden=true;$('#login').hidden=false;$('#login').textContent=(aiUser.name||aiUser.email||'Google акаунт')+' · вийти';}
-  $('#login').onclick=()=>{if(!aiToken)return;sessionStorage.removeItem('zoshit_ai_token');sessionStorage.removeItem('zoshit_google_user');aiToken='';aiUser=null;storeKey='zoshit';$('#login').hidden=true;$('#googleSignIn').hidden=false;toast('Вийшли з акаунта')};
+  if(aiToken&&aiUser){storeKey='zoshit_user_'+aiUser.sub;try{const saved=localStorage.getItem(storeKey);if(saved)S={...S,...JSON.parse(saved)}}catch{}theme();draw();notes();drawChatList();$('#googleSignIn').hidden=true;$('#login').hidden=false;$('#login').textContent=(aiUser.name||aiUser.email||'Google акаунт')+' · вийти';}
+  $('#login').onclick=()=>{if(!aiToken)return;sessionStorage.removeItem('zoshit_ai_token');sessionStorage.removeItem('zoshit_google_user');aiToken='';aiUser=null;storeKey='zoshit';try{S={chat:[],chats:[],activeChatId:null,notes:[],mem:[],...JSON.parse(localStorage.getItem(storeKey)||'{}')}}catch{S={chat:[],chats:[],activeChatId:null,notes:[],mem:[],th:0,hex:'',u:0}}theme();draw();notes();drawChatList();$('#login').hidden=true;$('#googleSignIn').hidden=false;toast('Вийшли з акаунта')};
  }catch(e){$('#login').hidden=false;$('#login').textContent='Google-вхід недоступний';$('#login').onclick=()=>toast('Не вдалося завантажити Google Sign-In. Перевір з’єднання.')}
 }
 
