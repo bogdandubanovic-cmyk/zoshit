@@ -42,7 +42,7 @@ main{display:flex;flex-direction:column;min-height:0;min-width:0}
 .row{display:flex;gap:8px;align-items:flex-end;background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:22px;padding:8px}
 .row textarea{flex:1;background:none;border:0;outline:0;resize:none;padding:8px 4px;max-height:160px}.row textarea::placeholder{color:rgba(255,255,255,.6)}
 .ib{background:none;border:0;width:40px;height:40px;border-radius:50%;display:grid;place-items:center}.ib:hover{background:rgba(255,255,255,.2)}
-.cam{display:none}.go{background:#fff;color:#1d1535;border:0;width:40px;height:40px;border-radius:50%;display:grid;place-items:center}
+.cam{display:none}.go{background:#fff;color:#1d1535;border:0;width:40px;height:40px;border-radius:50%;display:grid;place-items:center}.imgmode{border:1px solid var(--line);background:rgba(255,255,255,.12);border-radius:999px;padding:7px 10px;font-size:13px;white-space:nowrap}.imgmode.on{background:#fff;color:#24153c;border-color:#fff}
 .at{background:rgba(255,255,255,.22);border-radius:999px;padding:3px 6px 3px 12px;font-size:13px}.at button{background:none;border:0}
 .nbox{display:flex;gap:8px;padding:8px 20px;align-items:flex-start}.nbox textarea{flex:1;background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:10px;outline:0;resize:vertical}
 #nl{flex:1;overflow:auto;padding:8px 20px 20px;display:grid;gap:10px;align-content:start;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
@@ -63,7 +63,7 @@ main{display:flex;flex-direction:column;min-height:0;min-width:0}
 <div class="comp"><div class="chips" id="ats"></div>
 <div class="row"><button class="ib" id="clip" aria-label="Додати файл"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12l-8.5 8.5a5 5 0 01-7-7L14 5a3.3 3.3 0 014.7 4.7L10 18.4a1.7 1.7 0 01-2.4-2.4L15 8.6"/></svg></button>
 <button class="ib cam" id="camb" aria-label="Сфотографувати"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
-<textarea id="q" rows="1" placeholder="Книга, твір, фото задачі — питай що завгодно"></textarea>
+<button class="imgmode" id="imgmode" type="button" aria-pressed="false" title="Увімкнути режим створення зображення">🎨 Картинка</button><textarea id="q" rows="1" placeholder="Книга, твір, фото задачі — питай що завгодно"></textarea>
 <button class="go" id="go" aria-label="Надіслати"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></div></div>
 <input type="file" id="fi" multiple accept="image/*,.pdf,.txt,.md,.csv" hidden><input type="file" id="ci" accept="image/*" capture="environment" hidden></section>
 <section class="view" id="v-notes"><div class="nbox"><textarea id="nt" rows="2" placeholder="Нова нотатка"></textarea><button class="btn" id="na">Додати</button></div><div id="nl"></div></section>
@@ -124,7 +124,7 @@ const md=s=>{
  return out.join('<br>');
 };
 const TH=[['#ff7eb3','#7a5cff','#26c6da'],['#00c6ff','#0072ff','#7f00ff'],['#ff9966','#ff5e62','#8e2de2'],['#11998e','#38ef7d','#0f4c75'],['#ee0979','#ff6a00','#6a11cb'],['#232526','#5b3cc4','#0f2027']];
-let S={chat:[],notes:[],mem:[],th:0,hex:'',u:0},att=[],busy=false,uid=null,cloud=null,tm;
+let S={chat:[],notes:[],mem:[],th:0,hex:'',u:0},att=[],busy=false,uid=null,cloud=null,tm,imageMode=false;
 try{S={...S,...JSON.parse(localStorage.getItem('zoshit')||'{}')}}catch{}
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.append(e);setTimeout(()=>e.remove(),2600)}
 function hue(x){const n=parseInt(x.slice(1),16),r=(n>>16)/255,g=(n>>8&255)/255,b=(n&255)/255,m=Math.max(r,g,b),d=m-Math.min(r,g,b);if(!d)return 260;const h=m==r?((g-b)/d)%6:m==g?(b-r)/d+2:(r-g)/d+4;return Math.round((h*60+360)%360)}
@@ -153,7 +153,7 @@ async function send(){const q=$('#q').value.trim();if(busy||!q&&!att.length)retu
  att=[];$('#q').value='';$('#q').style.height='auto';busy=true;drawAtt();draw();
  try{
   if(!aiToken)throw Error('Спочатку натисни «Увійти та підключити ШІ».');
-  if(/\b(намалюй|згенеруй|зроби\s+(?:фото|фотку|картинк\w*|зображення)|створи\s+(?:фото|картинк\w*|зображення))\b/i.test(q)){
+  if(imageMode||/(намалюй|намалювати|згенеруй|згенерувати|створи\s+(?:мені\s+)?(?:фото|фотк\w*|картинк\w*|зображення)|зроби\s+(?:мені\s+)?(?:фото|фотк\w*|картинк\w*|зображення)|зроби\s+картинку|генерац\w*\s+зображення)/i.test(q)){
    const r=await fetch('/api/image',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+aiToken},body:JSON.stringify({prompt:q})});
    const d=await r.json();if(!r.ok)throw Error(d.error||r.status);
    S.chat.push({r:'assistant',t:'Готово! Ось зображення:',img:d.url});
@@ -175,7 +175,7 @@ $('#na').onclick=()=>{const t=$('#nt').value.trim();if(!t)return;S.notes.unshift
 $('#ats').onclick=e=>{if(e.target.dataset.r){att.splice(e.target.dataset.r,1);drawAtt()}}
 $('#clip').onclick=()=>$('#fi').click();$('#camb').onclick=()=>$('#ci').click();
 $('#fi').onchange=e=>{addFiles(e.target.files);e.target.value=''};$('#ci').onchange=e=>{addFiles(e.target.files);e.target.value=''};
-$('#go').onclick=send;
+$('#go').onclick=send;$('#imgmode').onclick=()=>{imageMode=!imageMode;$('#imgmode').classList.toggle('on',imageMode);$('#imgmode').setAttribute('aria-pressed',String(imageMode));$('#q').placeholder=imageMode?'Опиши, яке зображення створити…':'Книга, твір, фото задачі — питай що завгодно';if(imageMode)$('#q').focus()};
 $('#q').oninput=e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,160)+'px'};
 $('#q').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&matchMedia('(pointer:fine)').matches){e.preventDefault();send()}};
 addEventListener('paste',e=>{const f=[...e.clipboardData.files];if(f.length){e.preventDefault();addFiles(f)}});
