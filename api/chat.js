@@ -1,7 +1,7 @@
 // Pollinations BYOP proxy. The short-lived user-authorized token is never stored here.
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).end();
-  const token = (req.headers.authorization || '').replace(/^Bearer\\s+/i, '');
+  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ error: 'Увійди та підключи ШІ, щоб почати чат.' });
 
   const { messages = [], memory = [] } = req.body || {};
