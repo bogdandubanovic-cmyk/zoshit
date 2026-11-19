@@ -72,7 +72,7 @@ main{display:flex;flex-direction:column;min-height:0;min-width:0}
 const FB={apiKey:"",authDomain:"",projectId:"",appId:""};
 const $=s=>document.querySelector(s);
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const md=s=>esc(s).replace(/```([sS]*?)```/g,'<pre>$1</pre>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/**([^*]+)**/g,'<b>$1</b>').replace(/[([^]]+)]((https?:[^)s]+))/g,'<a href="$2" target="_blank" rel="noopener">$1</a>').replace(/^#{1,3} (.*)$/gm,'<b>$1</b>').replace(/\n/g,'<br>');
+const md=s=>esc(s).split(/\r?\n/).join('<br>');
 const TH=[['#ff7eb3','#7a5cff','#26c6da'],['#00c6ff','#0072ff','#7f00ff'],['#ff9966','#ff5e62','#8e2de2'],['#11998e','#38ef7d','#0f4c75'],['#ee0979','#ff6a00','#6a11cb'],['#232526','#5b3cc4','#0f2027']];
 let S={chat:[],notes:[],mem:[],th:0,hex:'',u:0},att=[],busy=false,uid=null,cloud=null,tm;
 try{S={...S,...JSON.parse(localStorage.getItem('zoshit')||'{}')}}catch{}
