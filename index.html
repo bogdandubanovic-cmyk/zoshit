@@ -168,7 +168,7 @@ async function send(){const q=$('#q').value.trim();if(busy||!q&&!att.length)retu
    const d=await r.json();if(!r.ok)throw Error(d.error||r.status);
    S.chat.push({r:'assistant',t:'Готово! Ось зображення:',img:d.url});
   }else{
-   const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+aiToken},body:JSON.stringify({messages:[...hist,{role:'user',content:parts}],memory:S.mem})});
+   const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+aiToken},body:JSON.stringify({messages:[...hist,{role:'user',content:parts}],memory:[...S.chats.filter(c=>c.id!==S.activeChatId).slice(0,8).flatMap(c=>(c.messages||[]).slice(-6).map(m=>(m.r==='user'?'Користувач: ':'Асистент: ')+String(m.t||'').slice(0,500))),...S.mem].slice(-40)})});
    const d=await r.json();if(!r.ok)throw Error(d.error||r.status);S.chat.push({r:'assistant',t:d.text||'(порожня відповідь)'});
   }
  }catch(e){S.chat.pop();if(q)S.mem.pop();$('#q').value=q;att=sent;drawAtt();toast('Помилка: '+e.message)}
