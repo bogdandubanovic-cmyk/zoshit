@@ -147,7 +147,7 @@ async function addFiles(fl){for(const f of fl){try{
  else toast('Не підтримується (або завеликий PDF): '+f.name)}catch{toast('Не вдалось відкрити '+f.name)}}drawAtt()}
 async function send(){const q=$('#q').value.trim();if(busy||!q&&!att.length)return;
  const hist=S.chat.slice(-16).map(m=>({role:m.r,content:m.t}));while(hist[0]&&hist[0].role!=='user')hist.shift();
- const parts=att.map(a=>a.txt!=null?{type:'text',text:\`Файл «\${a.n}»:\n\${a.txt.slice(0,40000)}\`}:{type:a.t==='application/pdf'?'document':'image',source:{type:'base64',media_type:a.t,data:a.d}});
+ const parts=att.map(a=>a.txt!=null?{type:'text',text:'Файл «'+a.n+'»:\n'+a.txt.slice(0,40000)}:{type:a.t==='application/pdf'?'document':'image',source:{type:'base64',media_type:a.t,data:a.d}});
  parts.push({type:'text',text:q||'Розбери прикладені файли.'});
  const sent=att;S.chat.push({r:'user',t:q||'(файл)',f:sent.map(a=>a.n)});if(q)S.mem=[...S.mem,q.slice(0,160)].slice(-30);
  att=[];$('#q').value='';$('#q').style.height='auto';busy=true;drawAtt();draw();
