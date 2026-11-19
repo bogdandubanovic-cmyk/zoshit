@@ -1,1 +1,13 @@
-{"functions":{"api/chat.js":{"maxDuration":60},"api/image.js":{"maxDuration":60}}}
+{
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 60
+    },
+    "api/image.js": {
+      "maxDuration": 60
+    },
+    "api/workspace.js": {
+      "maxDuration": 60
+    }
+  }
+}
