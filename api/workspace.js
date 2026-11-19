@@ -16,13 +16,24 @@ const ALLOWED_HOSTS = [
 async function identify(req) {
   const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) throw Object.assign(new Error('Увійди в акаунт, щоб відкрити робоче середовище.'), { status: 401 });
-  const r = await fetch('https://enter.pollinations.ai/api/oauth/userinfo', {
-    headers: { authorization: 'Bearer ' + token }
-  });
-  if (!r.ok) throw Object.assign(new Error('Сесія входу завершилась. Увійди знову.'), { status: 401 });
-  const user = await r.json();
-  if (!user.sub) throw Object.assign(new Error('Не вдалося підтвердити акаунт.'), { status: 401 });
-  return crypto.createHash('sha256').update(String(user.sub)).digest('hex').slice(0, 24);
+  let subject = '';
+  if (token.split('.').length === 3) {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) throw Object.assign(new Error('Google-вхід ще не налаштовано.'), { status: 503 });
+    const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(token));
+    const claims = await r.json();
+    if (!r.ok || claims.aud !== clientId || !claims.sub || claims.email_verified !== 'true' || Number(claims.exp) * 1000 < Date.now()) {
+      throw Object.assign(new Error('Сесія Google завершилась. Увійди знову.'), { status: 401 });
+    }
+    subject = 'google:' + claims.sub;
+  } else {
+    const r = await fetch('https://enter.pollinations.ai/api/oauth/userinfo', { headers: { authorization: 'Bearer ' + token } });
+    if (!r.ok) throw Object.assign(new Error('Сесія входу завершилась. Увійди знову.'), { status: 401 });
+    const user = await r.json();
+    if (!user.sub) throw Object.assign(new Error('Не вдалося підтвердити акаунт.'), { status: 401 });
+    subject = 'pollinations:' + user.sub;
+  }
+  return crypto.createHash('sha256').update(subject).digest('hex').slice(0, 24);
 }
 
 async function getBox(userHash) {
