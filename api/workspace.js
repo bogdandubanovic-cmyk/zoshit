@@ -98,6 +98,47 @@ module.exports = async (req, res) => {
       return res.json({ files, bytes, limitBytes: 500 * 1024 * 1024 });
     }
 
+    if (action === 'upload-chunk') {
+      const uploadId = String(req.body?.uploadId || '');
+      const name = String(req.body?.name || '').split(/[\\\\/]/).pop();
+      const index = Number(req.body?.index), total = Number(req.body?.total);
+      const data = String(req.body?.data || '');
+      if (!/^[a-f0-9]{24}$/.test(uploadId) || !name || name.length > 180 || !/^[a-zA-Z0-9._ ()@+-]+$/.test(name) || !Number.isInteger(index) || !Number.isInteger(total) || total < 1 || total > 50 || index < 0 || index >= total) {
+        return res.status(400).json({ error:'Некоректні параметри завантаження.' });
+      }
+      const chunk = Buffer.from(data, 'base64');
+      if (chunk.length > 2 * 1024 * 1024) return res.status(413).json({ error:'Розмір частини завеликий.' });
+      const dir = ROOT + '/.uploads/' + uploadId;
+      await box.fs.mkdir(dir, { recursive:true });
+      await box.fs.writeFile(dir + '/' + String(index).padStart(4,'0') + '.part', chunk);
+      if (index !== total - 1) return res.json({ ok:true, received:index+1, total, complete:false });
+      const dest = ROOT + '/' + name;
+      const assembled = await box.runCommand('sh', ['-lc', "cat '" + dir + "'/*.part > '" + dest + "' && rm -rf '" + dir + "'"]);
+      if (assembled.exitCode !== 0) return res.status(500).json({ error:'Не вдалося зібрати файл із частин.' });
+      if (name.toLowerCase().endsWith('.zip')) {
+        const temp = '/tmp/zoshit-unpack-' + uploadId;
+        const unpack = await box.runCommand('sh', ['-lc', "mkdir -p '" + temp + "' && unzip -oq '" + dest + "' -d '" + temp + "' && du -sb '" + temp + "' | cut -f1"]);
+        if (unpack.exitCode !== 0) { await box.runCommand('rm',['-rf',temp,dest]); return res.status(400).json({ error:'ZIP не вдалося розпакувати: ' + (await unpack.stderr()).slice(-800) }); }
+        const unpackedBytes = Number((await unpack.stdout()).trim()) || 0;
+        const current = await box.runCommand('du',['-sb',ROOT]);
+        const currentBytes = Number((await current.stdout()).trim().split(/\\s+/)[0]) || 0;
+        if (currentBytes + unpackedBytes > 500 * 1024 * 1024) {
+          await box.runCommand('rm',['-rf',temp,dest]);
+          return res.status(413).json({ error:'У середовищі ліміт 500 МБ. Видали старі файли та спробуй ще раз.' });
+        }
+        const copy = await box.runCommand('sh',['-lc',"cp -a '" + temp + "'/. '" + ROOT + "'/ && rm -rf '" + temp + "'"]);
+        if (copy.exitCode !== 0) return res.status(500).json({ error:'Не вдалося розпакувати проєкт у робочу папку.' });
+      } else {
+        const usage = await box.runCommand('du',['-sb',ROOT]);
+        const bytes = Number((await usage.stdout()).trim().split(/\\s+/)[0]) || 0;
+        if (bytes > 500 * 1024 * 1024) {
+          await box.fs.rm(dest,{force:true});
+          return res.status(413).json({ error:'У середовищі ліміт 500 МБ. Видали старі файли та спробуй ще раз.' });
+        }
+      }
+      return res.json({ ok:true, received:total, total, complete:true, message:'Файл завантажено.' });
+    }
+
     if (action === 'upload') {
       const files = Array.isArray(req.body?.files) ? req.body.files : [];
       if (!files.length || files.length > 30) return res.status(400).json({ error:'Додай від 1 до 30 файлів.' });
