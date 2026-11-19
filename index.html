@@ -76,7 +76,8 @@ main{display:flex;flex-direction:column;min-height:0;min-width:0}
 <script type="module">
 const POLLI_AUTH='https://enter.pollinations.ai';
 const POLLI_CLIENT_ID='pk_kB9KbExuhAqpmBHI';
-let aiToken=sessionStorage.getItem('zoshit_ai_token')||'',aiUser=(()=>{try{return JSON.parse(sessionStorage.getItem('zoshit_polli_user')||'null')}catch{return null}})(),googleToken=sessionStorage.getItem('zoshit_google_token')||'',googleUser=(()=>{try{return JSON.parse(sessionStorage.getItem('zoshit_google_user')||'null')}catch{return null}})(),googleClientId='';
+const legacyToken=sessionStorage.getItem('zoshit_ai_token')||'';let aiToken=legacyToken.split('.').length===3?'':legacyToken,aiUser=(()=>{try{return JSON.parse(sessionStorage.getItem('zoshit_polli_user')||'null')}catch{return null}})(),googleToken=sessionStorage.getItem('zoshit_google_token')||(legacyToken.split('.').length===3?legacyToken:''),googleUser=(()=>{try{return JSON.parse(sessionStorage.getItem('zoshit_google_user')||'null')}catch{return null}})(),googleClientId='';
+if(legacyToken.split('.').length===3){sessionStorage.removeItem('zoshit_ai_token');sessionStorage.setItem('zoshit_google_token',legacyToken)}
 const redirectUri=location.origin+location.pathname;
 function b64url(bytes){let s='';for(const b of bytes)s+=String.fromCharCode(b);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 async function connectAI(){
