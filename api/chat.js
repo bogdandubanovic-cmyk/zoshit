@@ -38,9 +38,11 @@ module.exports = async (req, res) => {
     };
     if (session) headers['mcp-session-id'] = session;
     if (method !== 'initialize') headers['mcp-protocol-version'] = '2025-03-26';
+    const packet = { jsonrpc: '2.0', method, params };
+    if (!method.startsWith('notifications/')) packet.id = id;
     const r = await fetch('https://gen.pollinations.ai/mcp/' + server, {
       method: 'POST', headers,
-      body: JSON.stringify({ jsonrpc: '2.0', id, method, params })
+      body: JSON.stringify(packet)
     });
     const sessionId = r.headers.get('mcp-session-id') || session || null;
     const raw = await r.text();
