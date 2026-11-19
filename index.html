@@ -29,7 +29,7 @@ main{display:flex;flex-direction:column;min-height:0;min-width:0}
 .cust{background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)}.cust input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
 .view{display:none;flex:1;min-height:0;flex-direction:column}.view.on{display:flex}
 #msgs{flex:1;overflow:auto;padding:8px 20px 20px;display:flex;flex-direction:column;gap:12px}
-.m{max-width:min(780px,88%);padding:12px 16px;border-radius:18px;background:var(--glass);backdrop-filter:blur(10px);overflow-wrap:anywhere}
+.generated{display:block;width:100%;max-width:520px;border-radius:14px;margin-top:12px;object-fit:contain;background:rgba(0,0,0,.12)}.m strong{font-weight:800}.m em{font-style:italic}.m ul{margin:6px 0;padding-left:22px}.m li{margin:3px 0}.m code{background:rgba(0,0,0,.2);padding:2px 5px;border-radius:5px}.m{max-width:min(780px,88%);padding:12px 16px;border-radius:18px;background:var(--glass);backdrop-filter:blur(10px);overflow-wrap:anywhere}
 .m.u{align-self:flex-end;background:rgba(255,255,255,.92);color:#1d1535}.m small{display:block;opacity:.65}
 .m pre{background:rgba(0,0,0,.35);padding:10px;border-radius:10px;overflow:auto;white-space:pre-wrap}.m code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:5px}.m a{color:#fff}
 .act{margin-top:8px;display:flex;gap:8px}.act button{background:rgba(255,255,255,.18);border:0;border-radius:8px;padding:4px 10px;font-size:13px}
@@ -112,7 +112,17 @@ async function updateLogin(){
 }
 const $=s=>document.querySelector(s);
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const md=s=>esc(s).split(/\r?\n/).join('<br>');
+const md=s=>{
+ const lines=esc(String(s||'')).split(/\\r?\\n/).map(line=>{
+  line=line.replace(/\\*\\*(.+?)\\*\\*/g,'<strong>$1</strong>').replace(/\\*([^*\\n]+)\\*/g,'<em>$1</em>').replace(/`([^`]+)`/g,'<code>$1</code>');
+  if(/^#{1,3}\\s/.test(line))line='<strong>'+line.replace(/^#{1,3}\\s/,'')+'</strong>';
+  return line;
+ });
+ let out=[],list=false;
+ for(const line of lines){if(/^[-•]\\s+/.test(line)){if(!list){out.push('<ul>');list=true}out.push('<li>'+line.replace(/^[-•]\\s+/,'')+'</li>')}else{if(list){out.push('</ul>');list=false}out.push(line)}}
+ if(list)out.push('</ul>');
+ return out.join('<br>');
+};
 const TH=[['#ff7eb3','#7a5cff','#26c6da'],['#00c6ff','#0072ff','#7f00ff'],['#ff9966','#ff5e62','#8e2de2'],['#11998e','#38ef7d','#0f4c75'],['#ee0979','#ff6a00','#6a11cb'],['#232526','#5b3cc4','#0f2027']];
 let S={chat:[],notes:[],mem:[],th:0,hex:'',u:0},att=[],busy=false,uid=null,cloud=null,tm;
 try{S={...S,...JSON.parse(localStorage.getItem('zoshit')||'{}')}}catch{}
@@ -124,7 +134,7 @@ function store(){try{localStorage.setItem('zoshit',JSON.stringify(S))}catch{}}
 async function push(){if(cloud)try{await cloud.set({j:JSON.stringify(S),u:S.u})}catch{toast('Не вдалось зберегти в акаунт')}}
 function draw(){const el=$('#msgs');
  if(!S.chat.length){el.innerHTML=`<div class="hello"><h1>Що робимо сьогодні?</h1><p>Питай про що завгодно, кидай фото завдання чи файл.</p><div class="chips">${['Знайди книги з теми…','Напиши твір про…','Розбери фото завдання','Склади план реферату'].map(t=>`<button class="chip" data-p="${t}">${t}</button>`).join('')}${S.mem.slice(-3).reverse().map(t=>`<button class="chip" data-p="${esc(t)}">↺ ${esc(t.slice(0,38))}</button>`).join('')}</div></div>`;return}
- el.innerHTML=S.chat.map((m,i)=>m.r==='user'?`<div class="m u">${esc(m.t).replace(/\n/g,'<br>')}${m.f?.length?`<small>Файли: ${m.f.map(esc).join(', ')}</small>`:''}</div>`:`<div class="m">${md(m.t)}<div class="act"><button data-s="${i}">У нотатки</button><button data-c="${i}">Копіювати</button></div></div>`).join('')+(busy?'<div class="m dots"><i></i><i></i><i></i></div>':'');
+ el.innerHTML=S.chat.map((m,i)=>m.r==='user'?'<div class="m u">'+esc(m.t).replace(/\\n/g,'<br>')+(m.f?.length?'<small>Файли: '+m.f.map(esc).join(', ')+'</small>':'')+'</div>':`<div class="m">${md(m.t)}${m.img?'<img class="generated" src="'+esc(m.img)+'" alt="Згенероване зображення" loading="lazy">':''}<div class="act"><button data-s="${i}">У нотатки</button><button data-c="${i}">Копіювати</button></div></div>`).join('')+(busy?'<div class="m dots"><i></i><i></i><i></i></div>':'');
  el.scrollTop=el.scrollHeight}
 function notes(){const e=S.notes;$('#nl').innerHTML=e.length?e.map(n=>`<div class="note">${esc(n.t)}<small>${new Date(n.id).toLocaleDateString('uk')}</small><div class="act"><button data-a="${n.id}">Спитати ШІ</button><button data-d="${n.id}">Видалити</button></div></div>`).join(''):'<p class="empty">Тут будуть твої нотатки. Додай свою або натисни «У нотатки» під відповіддю ШІ.</p>'}
 function drawAtt(){$('#ats').innerHTML=att.map((a,i)=>`<span class="at">${esc(a.n)} <button data-r="${i}" aria-label="Прибрати">×</button></span>`).join('')}
@@ -137,13 +147,21 @@ async function addFiles(fl){for(const f of fl){try{
  else toast('Не підтримується (або завеликий PDF): '+f.name)}catch{toast('Не вдалось відкрити '+f.name)}}drawAtt()}
 async function send(){const q=$('#q').value.trim();if(busy||!q&&!att.length)return;
  const hist=S.chat.slice(-16).map(m=>({role:m.r,content:m.t}));while(hist[0]&&hist[0].role!=='user')hist.shift();
- const parts=att.map(a=>a.txt!=null?{type:'text',text:`Файл «${a.n}»:\n${a.txt.slice(0,40000)}`}:{type:a.t==='application/pdf'?'document':'image',source:{type:'base64',media_type:a.t,data:a.d}});
+ const parts=att.map(a=>a.txt!=null?{type:'text',text:`Файл «${a.n}»:\\n${a.txt.slice(0,40000)}`}:{type:a.t==='application/pdf'?'document':'image',source:{type:'base64',media_type:a.t,data:a.d}});
  parts.push({type:'text',text:q||'Розбери прикладені файли.'});
  const sent=att;S.chat.push({r:'user',t:q||'(файл)',f:sent.map(a=>a.n)});if(q)S.mem=[...S.mem,q.slice(0,160)].slice(-30);
  att=[];$('#q').value='';$('#q').style.height='auto';busy=true;drawAtt();draw();
- try{if(!aiToken)throw Error('Спочатку натисни «Увійти та підключити ШІ».');const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+aiToken},body:JSON.stringify({messages:[...hist,{role:'user',content:parts}],memory:S.mem})});
-  const d=await r.json();if(!r.ok)throw Error(d.error||r.status);S.chat.push({r:'assistant',t:d.text||'(порожня відповідь)'})}
- catch(e){S.chat.pop();if(q)S.mem.pop();$('#q').value=q;att=sent;drawAtt();toast('Помилка: '+e.message)}
+ try{
+  if(!aiToken)throw Error('Спочатку натисни «Увійти та підключити ШІ».');
+  if(/\\b(намалюй|згенеруй|зроби\\s+(?:фото|фотку|картинк\\w*|зображення)|створи\\s+(?:фото|картинк\\w*|зображення))\\b/i.test(q)){
+   const r=await fetch('/api/image',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+aiToken},body:JSON.stringify({prompt:q})});
+   const d=await r.json();if(!r.ok)throw Error(d.error||r.status);
+   S.chat.push({r:'assistant',t:'Готово! Ось зображення:',img:d.url});
+  }else{
+   const r=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+aiToken},body:JSON.stringify({messages:[...hist,{role:'user',content:parts}],memory:S.mem})});
+   const d=await r.json();if(!r.ok)throw Error(d.error||r.status);S.chat.push({r:'assistant',t:d.text||'(порожня відповідь)'});
+  }
+ }catch(e){S.chat.pop();if(q)S.mem.pop();$('#q').value=q;att=sent;drawAtt();toast('Помилка: '+e.message)}
  busy=false;save();draw()}
 document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+b.dataset.v));$('#ttl').textContent=b.textContent})
 $('#msgs').onclick=e=>{const t=e.target,p=t.dataset.p,s=t.dataset.s,c=t.dataset.c;
