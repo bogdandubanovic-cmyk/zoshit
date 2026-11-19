@@ -86,7 +86,7 @@ module.exports = async (req, res) => {
     const action = req.method === 'GET' ? 'list' : String(req.body?.action || '');
 
     if (action === 'list') {
-      const r = await box.runCommand('sh', ['-lc', "cd " + ROOT + " && find . -type f -not -path './.gradle/*' -not -path './build/*' -printf '%P\\t%s\\n' | head -200; du -sb . | cut -f1"]);
+      const r = await box.runCommand('sh', ['-lc', "cd " + ROOT + " && find . -type f -not -path './.gradle/*' -printf '%P\\t%s\\n' | head -200; du -sb . | cut -f1"]);
       const lines = (await r.stdout()).trim().split('\\n');
       const bytes = Number(lines.pop()) || 0;
       const files = lines.filter(Boolean).map(line => { const i=line.lastIndexOf('\\t'); return { path:line.slice(0,i), size:Number(line.slice(i+1))||0 }; });
