@@ -1,25 +1,54 @@
-// Vercel serverless endpoint. Set ANTHROPIC_API_KEY in Vercel Environment Variables.
+// Pollinations BYOP proxy. The short-lived user-authorized token is never stored here.
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).end();
+  const token = (req.headers.authorization || '').replace(/^Bearer\\s+/i, '');
+  if (!token) return res.status(401).json({ error: 'Увійди та підключи ШІ, щоб почати чат.' });
+
   const { messages = [], memory = [] } = req.body || {};
   if (!Array.isArray(messages) || messages.length > 20 || !Array.isArray(memory)) {
     return res.status(400).json({ error: 'Некоректний запит' });
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(503).json({ error: 'Чат ще не налаштовано: додай ANTHROPIC_API_KEY у Vercel → Settings → Environment Variables.' });
-  }
+
   const system = 'Ти — «Зошит», ШІ-помічник студента. Відповідай мовою користувача (зазвичай українською), по суті й структуровано. ' +
-    'Коли потрібні свіжі факти, книги чи джерела — шукай в інтернеті й давай посилання. Твори, реферати, конспекти пиши якісно, без води, ' +
-    'у стилі й за вимогами, які студент уже задавав. Файли й фото розбирай уважно.' +
-    (memory.length ? '\n\nПопередні запити студента (для послідовності):\n- ' + memory.slice(-20).join('\n- ') : '');
+    'Коли потрібні свіжі факти, книги чи джерела — шукай в інтернеті й давай посилання, якщо доступний пошук. ' +
+    'Твори, реферати, конспекти пиши якісно, без води, враховуй вимоги студента. Файли й фото розбирай уважно.' +
+    (memory.length ? '\n\nПопередні запити студента для контексту:\n- ' + memory.slice(-20).map(x => String(x).slice(0, 300)).join('\n- ') : '');
+
+  const converted = messages.slice(-18).map(m => {
+    let content = m.content;
+    if (Array.isArray(content)) {
+      content = content.map(p => {
+        if (p.type === 'text') return { type: 'text', text: String(p.text || '').slice(0, 30000) };
+        if (p.type === 'image' && p.source?.type === 'base64') {
+          return { type: 'image_url', image_url: { url: 'data:' + p.source.media_type + ';base64,' + p.source.data } };
+        }
+        if (p.type === 'document') return { type: 'text', text: '[PDF додано, але читання PDF напряму поки не підтримується. Надішли фото сторінок або скопійований текст.]' };
+        return { type: 'text', text: '' };
+      });
+    }
+    return { role: m.role === 'assistant' ? 'assistant' : 'user', content };
+  });
+
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await fetch('https://gen.pollinations.ai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: process.env.MODEL || 'claude-sonnet-4-5', max_tokens: 4000, system, messages, tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }] })
+      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+      body: JSON.stringify({
+        model: 'openai/gpt-5.4-nano',
+        messages: [{ role: 'system', content: system }, ...converted],
+        max_tokens: 3000
+      })
     });
     const d = await r.json();
-    if (!r.ok) return res.status(r.status).json({ error: d.error?.message || 'Помилка API' });
-    res.json({ text: (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('') });
-  } catch (e) { res.status(500).json({ error: 'Помилка сервера' }); }
+    if (!r.ok) return res.status(r.status).json({
+      error: r.status === 402
+        ? 'На акаунті ШІ закінчився доступний баланс. Перевір витрати в Pollinations.'
+        : (d.error?.message || d.message || 'Помилка сервісу ШІ')
+    });
+    const answer = d.choices?.[0]?.message?.content;
+    const text = Array.isArray(answer) ? answer.map(x => x.text || '').join('') : (answer || '');
+    return res.json({ text: text || 'Модель не повернула текстову відповідь.' });
+  } catch {
+    return res.status(502).json({ error: 'Не вдалося зв’язатися із сервісом ШІ. Спробуй ще раз.' });
+  }
 };
